@@ -1,0 +1,35 @@
+name: Build the project with Make and run the main program on Ubuntu
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - '!docs/**'
+      - '!**/*.md'
+      - '.github/workflows/make.yaml'
+      - 'include/**'
+      - 'src/**'
+      - '**/Makefile'
+  pull_request:
+    branches: [main, master]
+    paths:
+      - '!docs/**'
+      - '!**/*.md'
+      - '.github/workflows/make.yaml'
+      - 'include/**'
+      - 'src/**'
+      - '**/Makefile'
+jobs:
+  make:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download psackage information
+        run: sudo apt-get update
+      - name: Install Clang
+        run: sudo apt-get install -y clang
+      - name: Check out the repository
+        uses: actions/checkout@main
+      - name: Build the project
+        run: make
+      - name: Run the main program
+        working-directory: ${{github.workspace}}/build
+        run: ./cpp-sample

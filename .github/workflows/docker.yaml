@@ -1,0 +1,59 @@
+name: Build a Docker image and run unit tests in a Docker container on Ubuntu
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - '!docs/**'
+      - '!**/*.md'
+      - '.github/workflows/docker.yaml'
+      - 'cmake/**'
+      - 'include/**'
+      - 'src/**'
+      - 'tests/**'
+      - '**/CMakeLists.txt'
+      - '**/Dockerfile'
+  pull_request:
+    branches: [main, master]
+    paths:
+      - '!docs/**'
+      - '!**/*.md'
+      - '.github/workflows/docker.yaml'
+      - 'cmake/**'
+      - 'include/**'
+      - 'src/**'
+      - 'tests/**'
+      - '**/CMakeLists.txt'
+      - '**/Dockerfile'
+env:
+  IMAGE: cpp-sample-img
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@main
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Build and export a Docker image
+        uses: docker/build-push-action@v6
+        with:
+          tags: ${{env.IMAGE}}:latest
+          outputs: type=docker, dest=/tmp/${{env.IMAGE}}.tar
+      - name: Upload the Docker image
+        uses: actions/upload-artifact@main
+        with:
+          name: ${{env.IMAGE}}
+          path: /tmp/${{env.IMAGE}}.tar
+  run:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download the Docker image
+        uses: actions/download-artifact@main
+        with:
+          name: ${{env.IMAGE}}
+          path: /tmp
+      - name: Load the Docker image
+        run: docker load --input /tmp/${{env.IMAGE}}.tar
+      - name: Run unit tests in a Docker container
+        run: docker container run ${{env.IMAGE}} ctest --test-dir .. -VV
